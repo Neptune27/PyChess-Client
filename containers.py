@@ -1,11 +1,11 @@
 import logging.config
 from dependency_injector import containers, providers
 
-from client.services.board import Board
-from client.services.game import Game
-from client.services.setting import Setting
-from client.services.socket_service import SocketService
-from client.services.stockfish_service import Stockfish, StockfishService
+from services.board import Board
+from services.game import Game
+from services.setting import Setting
+from services.socket_service import SocketService
+from services.stockfish_service import Stockfish, StockfishService
 
 
 class Container(containers.DeclarativeContainer):

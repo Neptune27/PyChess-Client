@@ -3,11 +3,11 @@ import threading
 import pygame
 from pygame import SurfaceType, Surface
 
-from client.services.base_service import BaseService
-from client.services.board import Board
-from client.services.setting import Setting
-from client.services.socket_service import SocketService
-from client.services.stockfish_service import Stockfish
+from services.base_service import BaseService
+from services.board import Board
+from services.setting import Setting
+from services.socket_service import SocketService
+from services.stockfish_service import Stockfish
 
 
 class Game(BaseService):
@@ -33,7 +33,7 @@ class Game(BaseService):
 
         self.game_scenes = []
 
-        self.play_online = False
+        self.play_online = True
         self.board.play_online = self.play_online
         if self.play_online:
             self.socket_service.ready_msg = "join|1"

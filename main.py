@@ -1,16 +1,23 @@
-# This is a sample Python script.
+import pygame
+from dependency_injector.wiring import inject, Provide
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+from containers import Container
+from services.game import Game
+from services.setting import Setting
 
 
-# Press the green button in the gutter to run the script.
+@inject
+def main(game: Game = Provide[Container.game],
+         ):
+    pygame.init()
+    pygame.font.init()
+
+    game.start()
+    pass
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    container = Container()
+    container.init_resources()
+    container.wire(modules=[__name__])
+    main()

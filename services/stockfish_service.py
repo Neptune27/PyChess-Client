@@ -6,8 +6,8 @@ from collections import deque
 
 from stockfish import Stockfish
 
-from client.services.base_service import BaseService
-from client.services.setting import Setting
+from services.base_service import BaseService
+from services.setting import Setting
 
 
 class StockfishService(BaseService):

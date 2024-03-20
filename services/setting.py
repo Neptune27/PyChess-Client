@@ -1,6 +1,6 @@
 import json
 
-from client.services.base_service import BaseService
+from services.base_service import BaseService
 
 
 class Setting(BaseService):

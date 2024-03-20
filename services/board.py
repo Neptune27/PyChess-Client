@@ -6,11 +6,11 @@ import numpy as np
 import pygame
 from pygame import SurfaceType, Surface
 
-from client.components.piece import Piece, Rook, Pawn, Knight, King, Bishop, Queen
-from client.services.base_service import BaseService
-from client.services.setting import Setting
-from client.services.socket_service import SocketService
-from client.services.stockfish_service import StockfishService
+from components.piece import Piece, Rook, Pawn, Knight, King, Bishop, Queen
+from services.base_service import BaseService
+from services.setting import Setting
+from services.socket_service import SocketService
+from services.stockfish_service import StockfishService
 
 
 class Board(BaseService):

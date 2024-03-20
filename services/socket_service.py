@@ -2,7 +2,7 @@ import threading
 import time
 import socket
 
-from client.services.base_service import BaseService
+from services.base_service import BaseService
 
 
 class SocketService(BaseService):
