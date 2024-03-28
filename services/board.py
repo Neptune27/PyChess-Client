@@ -38,7 +38,8 @@ class Board(BaseService):
 
         self._is_white_turn = True
         self.best_move = None
-        self.is_ai = True
+        self.is_ai = False
+        self.is_online = False
         self.ai_turn = not self.is_white_turn
         # TODO: Fix this shit
         self.real_player_turn = self.is_white_turn
@@ -57,7 +58,6 @@ class Board(BaseService):
         # 0: Normal, 1: Check, 2: Checkmate, 3: Draw
         self.board_state = 0
 
-        # self.set_board_by_fen("rnB1kbnr/ppP1pp1p/6p1/8/8/8/PPPP1PPP/RNBQK1NR w KQkq - 0 14")
         # self.setBoardByFEN("rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2")
         # self.setBoardByFEN("2b1kbnr/1P3ppp/8/4p3/8/8/RPP1PPPP/1NB1KBNR b Kk - 0 9")
         # self.setBoardByFEN("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
@@ -68,9 +68,11 @@ class Board(BaseService):
         # self.setBoardByFEN("rnbqkb1r/pp1p1ppp/8/2p1p3/8/3N1N2/PPPPPPPP/R1BQKB1R w KQkq - 0 6    ")
         # self.stockfish.set_fen_position("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2")
         self.set_default_board()
+        # self.set_board_by_fen("rnB1kbnr/ppP1pp1p/6p1/8/8/8/PPPP1PPP/RNBQK1NR w KQkq - 0 14")
 
     def start_online_game(self):
         self.socket_service.start()
+        self.is_online = True
 
     def handle_socket_message(self, msg):
         self.deque.append(msg)
@@ -166,6 +168,7 @@ class Board(BaseService):
 
         self.compute_legal_move()
         self.fen_pos = [self.get_current_fen()]
+        self.update_board_state()
 
     def load_FEN_pieces(self, fenBoard: list[str]) -> None:
         for y, item in enumerate(fenBoard):
@@ -211,11 +214,26 @@ class Board(BaseService):
         self.logger.info(f"Loading Notations Board: {notations}")
         raise NotImplementedError("")
 
+    def reset_board(self):
+        self.pgn = []
+        self.squares = []
+        self.fen_pos = []
+        self.set_default_board()
+        self.ai_turn = not self.is_white_turn
+        # TODO: Fix this shit
+        self.real_player_turn = self.is_white_turn
+
+        self.moves = 1
+        if self.is_online:
+            self.socket_service.send(f'reset')
+
+
+
     def set_default_board(self):
         self.logger.info("Loading default board...")
         self.set_board_by_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
-    def drawBoard(self, rectDimension: int):
+    def draw_board(self, rectDimension: int):
         for i in range(64):
             column = i % 8
             row = i // 8
@@ -231,7 +249,7 @@ class Board(BaseService):
                                                                    (row * rectDimension),
                                                                    rectDimension, rectDimension])
 
-    def drawNotations(self):
+    def draw_notations(self):
         for i in range(8):
             numberImg = None
             alphabetImg = None
@@ -254,6 +272,29 @@ class Board(BaseService):
             alphabetRect.x = 10 + self.rectDimension * i
             alphabetRect.y = self.minDimension - 20
             self.board.blit(alphabetImg, alphabetRect)
+
+    def draw_turn(self, rect_dimension):
+        if len(self.squares) == 0:
+            return
+        current_turn = self.squares[-1]
+        from_x, from_y, to_x, to_y = self.get_positions_by_square_turn(current_turn)
+        pygame.draw.rect(self.board, "lightgreen", [(from_x * rect_dimension),
+                                                    (from_y * rect_dimension),
+                                                    rect_dimension, rect_dimension])
+        pygame.draw.rect(self.board, "green", [(to_x * rect_dimension),
+                                               (to_y * rect_dimension),
+                                               rect_dimension, rect_dimension])
+
+    def draw_checked(self, rect_dimension):
+        if self.board_state != 1 and self.board_state != 2:
+            return
+
+        b_king, w_king = self.get_black_and_white_king()
+        team_king = w_king if self.is_white_turn else b_king
+
+        pygame.draw.rect(self.board, "darkred", [(team_king.x * rect_dimension),
+                                                 (team_king.y * rect_dimension),
+                                                 rect_dimension, rect_dimension])
 
     def handle_event(self, event):
         # proceed events
@@ -286,6 +327,12 @@ class Board(BaseService):
                 self.logger.info(self.real_player_turn)
                 self.logger.info(self.is_white_turn)
                 self.compute_legal_move()
+            case "get_fen":
+                self.socket_service.send(f"fen|{json.dumps(self.fen_pos)}|{json.dumps(not self.real_player_turn)}")
+            case "reset":
+                self.socket_service.send("get_fen")
+
+
 
     def draw(self):
 
@@ -293,14 +340,16 @@ class Board(BaseService):
             self.logger.error(f"Screen is not defined")
             raise Exception("Screen is not defined")
 
-        self.drawBoard(self.rectDimension)
+        self.draw_board(self.rectDimension)
+        self.draw_turn(self.rectDimension)
+        self.draw_checked(self.rectDimension)
 
         self.handle_queue()
 
         self.pieces.draw(self.board)
         self.pieces.update(screen=self.board)
 
-        self.drawNotations()
+        self.draw_notations()
 
         self.screen.blit(self.board, self.drawingPos)
 
@@ -385,15 +434,20 @@ class Board(BaseService):
             # self.ai_turn = not self.ai_turn
 
         # self.stockfish.get_best_move(self._handle_best_move)
+        if not self.is_ai and not self.is_online:
+            self.real_player_turn = self.is_white_turn
         self.compute_legal_move()
         self.update_board_state()
+        self.update_pgn_state()
+        self.fen_pos.append(self.get_current_fen())
+        self.logger.info(f"FEN: {self.fen_pos}")
+        self.logger.info(f"PGN: {self.to_pgn()}")
+
+    def update_pgn_state(self):
         if self.board_state == 1:
             self.pgn[-1] += "+"
         elif self.board_state == 2:
             self.pgn[-1] += "#"
-        self.fen_pos.append(self.get_current_fen())
-        self.logger.info(f"FEN: {self.fen_pos}")
-        self.logger.info(f"PGN: {self.to_pgn()}")
 
     def _handle_click_empty(self, pos: tuple[int, int]):
         if self.selectedPiece is None:
@@ -455,6 +509,8 @@ class Board(BaseService):
             self.selectedPiece = rook
             self.make_turn((rook_pos, y), True)
             self.selectedPiece = from_piece
+            from_piece.can_castle_queen = False
+            from_piece.can_castle_king = False
 
         if test_mode:
             from_piece.can_castle_queen, from_piece.can_castle_king = q, k
@@ -500,7 +556,7 @@ class Board(BaseService):
             if self.is_ai:
                 self.stockfish.make_move(square_name)
 
-            if self.play_online and self.real_player_turn == self.is_white_turn:
+            if self.is_online and self.real_player_turn == self.is_white_turn:
                 self.socket_service.send(f"p|{square_name}")
 
             self.pgn.append(pgn)
@@ -560,17 +616,23 @@ class Board(BaseService):
 
         self.stockfish.get_best_move(callback)
 
-    def make_turn_by_square_notation(self, notation):
-
+    def get_positions_by_square_turn(self, notation):
         from_pos, to_pos = notation[:2], notation[2:4]
-        extra = notation[-1] if len(notation) == 5 else ""
-        self.logger.info(f"Moves: {from_pos, to_pos, extra}")
 
         from_x = Board.row_notation.index(from_pos[0])
         from_y = Board.col_notation.index(from_pos[1])
 
         to_x = Board.row_notation.index(to_pos[0])
         to_y = Board.col_notation.index(to_pos[1])
+
+        return from_x, from_y, to_x, to_y
+
+    def make_turn_by_square_notation(self, notation):
+
+        from_x, from_y, to_x, to_y = self.get_positions_by_square_turn(notation)
+        extra = notation[-1] if len(notation) == 5 else ""
+        self.logger.info(f"Moves: {from_x, from_y, to_x, to_y, extra}")
+
         item = self.coordinate[from_x][from_y]
         self.selectedPiece = item
         self.logger.info(f"PGN: {self.pgn}")
@@ -833,3 +895,4 @@ class Board(BaseService):
         fen_castle = self.get_current_fen_castle()
         fen_en_passant = self.get_fen_en_passant()
         return f"{'/'.join(fen_piece)} {'w' if self._is_white_turn else 'b'} {''.join(fen_castle)} {fen_en_passant} {self.half_clock} {math.ceil(self.moves / 2)}"
+

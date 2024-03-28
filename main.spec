@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['client\\main.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('client/stockfish/**', 'stockfish')],
-    hiddenimports=['dependency_injector.errors'],
+    datas=[('stockfish/**', 'stockfish'),('*.ini', '.')],
+    hiddenimports=['dependency_injector.errors', 'dependency_injector.containers', 'six'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
