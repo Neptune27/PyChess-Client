@@ -12,7 +12,7 @@ class SocketService(BaseService):
         self._socket.setblocking(False)
         self.host = 'localhost'
         self.port = 9999
-        self.receive_handler = None
+        self.receive_handlers = []
         self.ready_msg = ""
         self.running = False
 
@@ -47,14 +47,15 @@ class SocketService(BaseService):
                 continue
             msg = data.decode('utf-8')
             self.logger.info(f"Received: {msg}")
-            self.receive_handler(msg)
+            for receive_handler in self.receive_handlers:
+                receive_handler(msg)
         self.logger.info("Stopped")
 
     def send(self, message):
         self._socket.sendall(message.encode('utf-8'))
 
     def on_receive(self, handler):
-        self.receive_handler = handler
+        self.receive_handlers.append(handler)
 
     def _msg_on_ready(self):
         retry = 0

@@ -4,6 +4,7 @@ import pygame
 import pygame_gui
 from pygame import SurfaceType, Surface
 
+from components.chat_component import ChatGUI
 from services.base_service import BaseService
 from services.board import Board
 from services.game_over_dialog import GameOverDialog
@@ -35,13 +36,14 @@ class Game(BaseService):
         self.clock = pygame.time.Clock()
 
         self.game_scenes = []
-        self.temp = pygame.Surface([700, 700])
 
         self.play_online = True
         self.board.play_online = self.play_online
 
         self.game_over_dialogs = GameOverDialog(setting)
         self.game_over_dialogs.on_restart_clicked(self.board.reset_board)
+
+        self.chat_gui = ChatGUI(setting, socket_service)
 
         if self.play_online:
             self.socket_service.ready_msg = "join|1"
@@ -67,13 +69,17 @@ class Game(BaseService):
                     # self.logger.info(event)
                     self.board.handle_event(event)
 
+                self.chat_gui.process_events(event)
+
                 if self.board.board_state > 1:
                     self.game_over_dialogs.process_events(event)
-
 
             if self.board.board_state > 1:
                 self.game_over_dialogs.update(time_delta)
                 self.game_over_dialogs.draw(self.screen)
+
+            self.chat_gui.update(time_delta)
+            self.chat_gui.draw(self.screen)
 
             pygame.display.flip()
 

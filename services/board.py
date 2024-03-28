@@ -25,7 +25,7 @@ class Board(BaseService):
         self._screen: Surface | SurfaceType = None
         self._board: Surface | SurfaceType
 
-        self.drawingPos = (100, 0)
+        self.drawingPos = (200, 0)
 
         self.minDimension: int = 0
         self.rectDimension = 0
@@ -355,7 +355,6 @@ class Board(BaseService):
 
     def handle_moving(self, pos: tuple[int, int]):
         clicked_sprites = [s for s in self.pieces if s.rect.collidepoint(pos)]
-        self.logger.info(f"Is White: {self.is_white_turn}")
         if len(clicked_sprites) > 0:
             if (self.is_white_turn != self.real_player_turn) or (clicked_sprites[0].is_white != self.real_player_turn
                                                                  and self.selectedPiece is None):
@@ -429,7 +428,6 @@ class Board(BaseService):
         self.moves += 1
         self.is_white_turn = not self.is_white_turn
         if self.is_ai and self.is_white_turn == self.ai_turn:
-            self.logger.info("Making turn")
             self.make_turn_by_stockfish()
             # self.ai_turn = not self.ai_turn
 
