@@ -38,8 +38,8 @@ class Board(BaseService):
 
         self._is_white_turn = True
         self.best_move = None
-        self.is_ai = False
         self.is_online = False
+        self.is_ai = False
         self.ai_turn = not self.is_white_turn
         # TODO: Fix this shit
         self.real_player_turn = self.is_white_turn
@@ -55,7 +55,7 @@ class Board(BaseService):
         self.moves = 1
         self.half_clock = 0
 
-        # 0: Normal, 1: Check, 2: Checkmate, 3: Draw
+        # 0: Normal, 1: Check, 2: Checkmate as white, 3: Checkmate as black, 4: Draw
         self.board_state = 0
 
         # self.setBoardByFEN("rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2")
@@ -71,7 +71,6 @@ class Board(BaseService):
         # self.set_board_by_fen("rnB1kbnr/ppP1pp1p/6p1/8/8/8/PPPP1PPP/RNBQK1NR w KQkq - 0 14")
 
     def start_online_game(self):
-        self.socket_service.start()
         self.is_online = True
 
     def handle_socket_message(self, msg):
@@ -164,10 +163,11 @@ class Board(BaseService):
 
         self.half_clock = int(items[4])
 
-        self.moves = int(items[5])
+        self.moves = int(items[5]) * 2 - 1 if items[1] == 'w' else int(items[5]) * 2
 
         self.compute_legal_move()
-        self.fen_pos = [self.get_current_fen()]
+        if len(self.fen_pos) == 0:
+            self.fen_pos = [self.get_current_fen()]
         self.update_board_state()
 
     def load_FEN_pieces(self, fenBoard: list[str]) -> None:
@@ -226,8 +226,6 @@ class Board(BaseService):
         self.moves = 1
         if self.is_online:
             self.socket_service.send(f'reset')
-
-
 
     def set_default_board(self):
         self.logger.info("Loading default board...")
@@ -320,6 +318,8 @@ class Board(BaseService):
                 self.make_turn_by_square_notation(notation)
             case "join":
                 self.socket_service.send(f"fen|{json.dumps(self.fen_pos)}|{json.dumps(not self.real_player_turn)}")
+                self.socket_service.send(f"pgn|{json.dumps(self.pgn)}")
+                self.socket_service.send(f"square|{json.dumps(self.squares)}")
             case "fen":
                 self.fen_pos = json.loads(items[1])
                 self.set_board_by_fen(self.fen_pos[-1])
@@ -327,12 +327,45 @@ class Board(BaseService):
                 self.logger.info(self.real_player_turn)
                 self.logger.info(self.is_white_turn)
                 self.compute_legal_move()
+            case "pgn":
+                self.pgn = json.loads(items[1])
+            case "square":
+                self.squares = json.loads(items[1])
             case "get_fen":
                 self.socket_service.send(f"fen|{json.dumps(self.fen_pos)}|{json.dumps(not self.real_player_turn)}")
+
             case "reset":
                 self.socket_service.send("get_fen")
+            case "command":
+                match items[1]:
+                    case "undo":
+                        if items[2] == "a":
+                            is_white = True if items[3] == "w" else False
+                            turn_to_undo = 2 if is_white == self.is_white_turn else 1
+                            self.undo_turns(turn_to_undo)
+                    case "tie":
+                        if items[2] == "a":
+                            self.board_state = 4
+                    case "forfeit":
+                        self.board_state = 2 if items[2] == "w" else 3
 
+    def undo_turn_offline(self):
+        if self.is_online:
+            return
 
+        turn_to_undo = 2 if self.is_ai else 1
+        self.undo_turns(turn_to_undo)
+
+    def undo_turns(self, turn_to_undo):
+        if turn_to_undo > len(self.fen_pos):
+            turn_to_undo = len(self.fen_pos)
+        if len(self.fen_pos) == 1:
+            return
+        self.pgn = self.pgn[:-turn_to_undo]
+        self.fen_pos = self.fen_pos[:-turn_to_undo]
+        self.squares = self.squares[:-turn_to_undo]
+        self.set_board_by_fen(self.fen_pos[-1])
+        self.logger.info(f"Undoing {turn_to_undo} turn")
 
     def draw(self):
 
@@ -405,8 +438,12 @@ class Board(BaseService):
 
         if is_check:
             self.board_state = 2 if Board.is_no_possible_move(teams) else 1
+
         else:
-            self.board_state = 3 if Board.is_no_possible_move(teams) else 0
+            self.board_state = 4 if Board.is_no_possible_move(teams) else 0
+
+        if self.board_state == 2:
+            self.board_state = 2 if self.is_white_turn else 3
 
     @staticmethod
     def is_check(opponents: list[Piece], team_king: King):
@@ -893,4 +930,3 @@ class Board(BaseService):
         fen_castle = self.get_current_fen_castle()
         fen_en_passant = self.get_fen_en_passant()
         return f"{'/'.join(fen_piece)} {'w' if self._is_white_turn else 'b'} {''.join(fen_castle)} {fen_en_passant} {self.half_clock} {math.ceil(self.moves / 2)}"
-

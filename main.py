@@ -17,6 +17,8 @@ def main(game: Game = Provide[Container.game],
 
 
 if __name__ == '__main__':
+    pygame.init()
+    pygame.font.init()
     container = Container()
     container.init_resources()
     container.wire(modules=[__name__])

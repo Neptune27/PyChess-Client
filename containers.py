@@ -1,11 +1,14 @@
 import logging.config
 from dependency_injector import containers, providers
 
+from components.main_menu import MainMenu
+from components.room_menu import RoomMenu
 from services.board import Board
 from services.game import Game
+from components.game_over_dialog import GameOverDialog
 from services.setting import Setting
 from services.socket_service import SocketService
-from services.stockfish_service import Stockfish, StockfishService
+from services.stockfish_service import StockfishService
 
 
 class Container(containers.DeclarativeContainer):
@@ -22,7 +25,7 @@ class Container(containers.DeclarativeContainer):
         config_file=config.setting.location
     )
 
-    # Singletion
+    # Singleton
     stockfish = providers.Singleton(
         StockfishService,
         setting=setting
@@ -34,8 +37,12 @@ class Container(containers.DeclarativeContainer):
 
     # Services
     board = providers.Factory(Board, setting=setting, stockfish=stockfish, socket_service=socket_service)
+    game_over_dialog = providers.Factory(GameOverDialog, setting=setting)
+    main_menu = providers.Factory(MainMenu, setting=setting)
+    room_menu = providers.Factory(RoomMenu, setting=setting, socket_service=socket_service)
 
-    game = providers.Factory(Game, setting=setting, board=board, stockfish=stockfish, socket_service=socket_service)
+    game = providers.Factory(Game, setting=setting, board=board, stockfish=stockfish, socket_service=socket_service,
+                             main_menu=main_menu, game_over_dialog=game_over_dialog, room_menu=room_menu)
     
 
 

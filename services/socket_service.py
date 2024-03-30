@@ -8,8 +8,7 @@ from services.base_service import BaseService
 class SocketService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.setblocking(False)
+        self._socket = None
         self.host = 'localhost'
         self.port = 9999
         self.receive_handlers = []
@@ -17,7 +16,11 @@ class SocketService(BaseService):
         self.running = False
 
     def connect(self):
-        self._socket.connect_ex((self.host, self.port))
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.setblocking(False)
+
+        errno = self._socket.connect_ex((self.host, self.port))
+        self.logger.info(f"Errno: {errno}")
 
     def start(self):
         self.connect()
@@ -33,7 +36,6 @@ class SocketService(BaseService):
     def _fork_receive(self):
         total_retry = 0
         while self.running:
-            time.sleep(0.5)
             try:
                 data = self._socket.recv(1024)
             except BlockingIOError:
@@ -45,14 +47,19 @@ class SocketService(BaseService):
                     self.disconnect()
 
                 continue
-            msg = data.decode('utf-8')
-            self.logger.info(f"Received: {msg}")
-            for receive_handler in self.receive_handlers:
-                receive_handler(msg)
+            msgs = data.decode('utf-8')
+            self.logger.info(f"Received: {msgs}")
+            for msg in msgs.split("\\"):
+                for receive_handler in self.receive_handlers:
+                    receive_handler(msg)
         self.logger.info("Stopped")
 
     def send(self, message):
-        self._socket.sendall(message.encode('utf-8'))
+        try:
+            self._socket.sendall(f"{message}\\".encode('utf-8'))
+        except OSError:
+            self.logger.info("Cannot send data to server, disconnecting...")
+            self.disconnect()
 
     def on_receive(self, handler):
         self.receive_handlers.append(handler)
