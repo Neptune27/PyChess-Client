@@ -1,5 +1,6 @@
 from enum import Enum
 
+import requests
 import pygame
 from pygame import SurfaceType, Surface
 
@@ -58,10 +59,13 @@ class Game(BaseService):
 
         self.setup_callback()
 
+        self.icon = pygame.image.load('assets/img/icon.png').convert()
+
     def setup_callback(self):
         self.main_menu.vs_ai_callback = self.handle_callback_ai
         self.main_menu.vs_2p_callback = self.handle_callback_offline
         self.main_menu.vs_online_callback = self.handle_callback_online
+        self.main_menu.puzzle_callback = self.handle_callback_puzzle
 
         self.chat_gui.forfeit_offline_callback = self.handle_forfeit_offline
         self.chat_gui.undo_callback = self.handle_undo_offline
@@ -119,8 +123,34 @@ class Game(BaseService):
         self.board.start_online_game()
         self.play_online = True
 
+    def handle_callback_puzzle(self):
+        self.logger.info('Clicked Puzzle')
+        self.board.is_online = False
+        self.board.is_ai = False
+
+        self.board.set_board_by_fen(self.generate_puzzle())
+        self.game_scenes = EScene.BOARD
+        self.chat_gui.is_online = False
+
+
+    def generate_puzzle(self):
+        url = "https://chess-puzzles.p.rapidapi.com/"
+
+        querystring = {"themesType": "ALL",
+                       "playerMoves": "1", "count": "1"}
+
+        headers = {
+            "X-RapidAPI-Key": "e1b49db988msh6194a3a206380cbp164729jsnb38b3128aa33",
+            "X-RapidAPI-Host": "chess-puzzles.p.rapidapi.com"
+        }
+
+        response = requests.get(url, headers=headers, params=querystring)
+        return response.json()['puzzles'][0]['fen']
+
     def start(self):
         pygame.init()
+        pygame.display.set_icon(self.icon)
+        pygame.display.set_caption('PyChess')
         self.run = True
         while self.run:
             time_delta = self.clock.tick(self.setting.FPS) / 1000.0

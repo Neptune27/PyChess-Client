@@ -50,6 +50,18 @@ class MainMenu(BaseUI):
                                                              }
                                                              )
 
+        self.puzzle_callback = None
+        self.puzzle_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(0, 550, 400, 100),
+                                                             manager=self.manager,
+                                                             container=self.panel,
+                                                             text='Random Puzzle',
+                                                             anchors={
+                                                                 'centerx': 'centerx'
+                                                             }
+                                                             )
+
+
+
     def process_events(self, event: pygame.event.Event):
         super().process_events(event)
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
@@ -60,3 +72,5 @@ class MainMenu(BaseUI):
                     self.handle_callback(self.vs_2p_callback)
                 case self.vs_online_button:
                     self.handle_callback(self.vs_online_callback)
+                case self.puzzle_button:
+                    self.handle_callback(self.puzzle_callback)
