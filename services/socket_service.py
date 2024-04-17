@@ -5,11 +5,12 @@ import socket
 from services.base_service import BaseService
 
 
+
 class SocketService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
         self._socket = None
-        self.host = 'localhost'
+        self.host = '26.247.59.68'
         self.port = 9999
         self.receive_handlers = []
         self.ready_msg = ""
@@ -17,10 +18,8 @@ class SocketService(BaseService):
 
     def connect(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.connect((self.host, self.port))
         self._socket.setblocking(False)
-
-        errno = self._socket.connect_ex((self.host, self.port))
-        self.logger.info(f"Errno: {errno}")
 
     def start(self):
         self.connect()
@@ -31,6 +30,8 @@ class SocketService(BaseService):
     def disconnect(self):
         self.logger.info("Disconnecting from server %s:%d", self.host, self.port)
         self.running = False
+        if self._socket is None:
+            return
         self._socket.close()
 
     def _fork_receive(self):

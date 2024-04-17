@@ -13,7 +13,7 @@ class Setting(BaseService):
         self.load()
 
         self.HEIGHT = 800
-        self.WIDTH = 1000
+        self.WIDTH = 1200
 
         self.color1 = '#b58863'
         self.color2 = '#f0d9b5'
