@@ -4,6 +4,7 @@ import requests
 import pygame
 from pygame import SurfaceType, Surface
 
+from components.board_info_menu import BoardInfoMenu
 from components.chat_component import ChatGUI
 from components.main_menu import MainMenu
 from components.room_menu import RoomMenu
@@ -26,8 +27,9 @@ class Game(BaseService):
 
     def __init__(self, setting: Setting,
                  board: Board, stockfish: Stockfish, socket_service: SocketService,
-                 game_over_dialog: GameOverDialog, main_menu: MainMenu, room_menu: RoomMenu):
+                 game_over_dialog: GameOverDialog, main_menu: MainMenu, room_menu: RoomMenu, board_info: BoardInfoMenu):
         BaseService.__init__(self)
+        self.board_info = board_info
         self.room_menu = room_menu
         self.main_menu = main_menu
 
@@ -76,6 +78,9 @@ class Game(BaseService):
         self.game_over_dialog.return_callback = self.to_main_menu
         self.socket_service.on_receive(self.board.handle_socket_message)
 
+        self.board.set_fen_callback = self.board_info.set_fen_text
+        self.board.set_pgn_callback = self.board_info.set_pgn_text
+
     def to_board(self):
         self.game_scenes = EScene.BOARD
 
@@ -112,6 +117,7 @@ class Game(BaseService):
 
     def handle_callback_online(self):
         self.socket_service.start()
+        self.socket_service.send("rooms")
 
         self.logger.info('Clicked Online')
         self.game_scenes = EScene.ONLINE_SELECTION
@@ -188,7 +194,10 @@ class Game(BaseService):
             self.board.handle_event(event)
 
         self.chat_gui.process_events(event)
-        self.game_over_dialog.process_events(event)
+        self.board_info.process_events(event)
+
+        if self.board.board_state > 1:
+            self.game_over_dialog.process_events(event)
 
     def handle_board(self, time_delta):
         self.board.draw()
@@ -206,4 +215,7 @@ class Game(BaseService):
 
         self.chat_gui.update(time_delta)
         self.chat_gui.draw(self.screen)
+
+        self.board_info.update(time_delta)
+        self.board_info.draw(self.screen)
 

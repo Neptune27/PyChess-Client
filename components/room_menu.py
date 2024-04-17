@@ -23,7 +23,7 @@ class RoomMenu(BaseUI):
                                                      'left': 'left',
                                                      'top': 'top'
                                                  })
-        self.refresh_btn = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(-225, 25, 200, 100),
+        self.refresh_btn = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(-150, 50, 100, 50),
                                                         text="Refresh",
                                                         manager=self.manager,
                                                         container=self.panel,
@@ -31,15 +31,43 @@ class RoomMenu(BaseUI):
                                                             'right': 'right'
                                                         })
 
-        self.create_room = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(-450, 25, 200, 100),
+        self.create_room = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(-175, 50, 150, 50),
                                                         text="Create Room",
                                                         manager=self.manager,
                                                         container=self.panel,
                                                         anchors={
-                                                            'right': 'right'
+                                                            'right': 'right',
+                                                            'right_target': self.refresh_btn
                                                         })
 
-        self.return_btn = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(25, 25, 200, 100),
+        self.connect_btn = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(-125, 50, 100, 50),
+                                                        text="Connect",
+                                                        manager=self.manager,
+                                                        container=self.panel,
+                                                        anchors={
+                                                            'right': 'right',
+                                                            'right_target': self.create_room
+                                                        })
+
+        self.connection_line = pygame_gui.elements.UITextEntryLine(relative_rect=pygame.Rect(-325, 50, 300, 50),
+                                                                   initial_text=f"{self.socket_service.host}:{self.socket_service.port}",
+                                                                   manager=self.manager,
+                                                                   container=self.panel,
+                                                                   anchors={
+                                                                       'right': 'right',
+                                                                       'right_target': self.connect_btn
+                                                                   })
+
+        self.connection_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect(0, 25, 300, 25),
+                                                            text="Server Address:",
+                                                            manager=self.manager,
+                                                            container=self.panel,
+                                                            anchors={
+                                                                'right': 'right',
+                                                                'right_target': self.connection_line,
+                                                            })
+
+        self.return_btn = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(50, 50, 100, 50),
                                                        text="Return",
                                                        manager=self.manager,
                                                        container=self.panel,
@@ -55,11 +83,45 @@ class RoomMenu(BaseUI):
         self.room_group = []
         self.socket_service.on_receive(self.handle_receive)
         self.to_board_callback = None
-        self.add_room([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+        # self.add_room([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
         # self.clear_room()
 
     def handle_receive(self, msg: str):
         self.deque.append(msg)
+
+    def reconnect(self, host, port):
+
+        try:
+            self.socket_service.host, self.socket_service.port = host, port
+            self.socket_service.disconnect()
+            self.socket_service.start()
+            self.get_rooms()
+        except ConnectionRefusedError:
+            self.logger.info("Server not found")
+            raise ConnectionRefusedError("Server not found")
+
+    def handle_connect(self):
+        text = self.connection_line.get_text().strip()
+        tokens = text.split(":")
+        prev_host, prev_port = self.socket_service.host, self.socket_service.port
+        if len(tokens) != 2:
+            self.logger.error("Invalid server address")
+            return
+
+        retry = 0
+        host, port = tokens[0], int(tokens[1])
+        while retry < 2:
+            retry += 1
+            try:
+                self.reconnect(host, port)
+                return
+
+            except ConnectionRefusedError:
+                host, port = prev_host, prev_port
+                self.connection_line.set_text(f"{host}:{port}")
+
+        # If it cannot connect then it will automatically disconnect
+        self.socket_service.disconnect()
 
     def handle_queue(self):
         if len(self.deque) == 0:
@@ -115,6 +177,8 @@ class RoomMenu(BaseUI):
             if event.ui_element == self.create_room:
                 self.socket_service.send("join|999")
                 self.handle_callback(self.to_board_callback)
+            if event.ui_element == self.connect_btn:
+                self.handle_connect()
 
     def update(self, delta_time):
         super().update(delta_time)

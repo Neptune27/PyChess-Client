@@ -1,6 +1,7 @@
 import logging.config
 from dependency_injector import containers, providers
 
+from components.board_info_menu import BoardInfoMenu
 from components.main_menu import MainMenu
 from components.room_menu import RoomMenu
 from services.board import Board
@@ -40,9 +41,11 @@ class Container(containers.DeclarativeContainer):
     game_over_dialog = providers.Factory(GameOverDialog, setting=setting)
     main_menu = providers.Factory(MainMenu, setting=setting)
     room_menu = providers.Factory(RoomMenu, setting=setting, socket_service=socket_service)
+    board_info_menu = providers.Factory(BoardInfoMenu, setting=setting)
+
 
     game = providers.Factory(Game, setting=setting, board=board, stockfish=stockfish, socket_service=socket_service,
-                             main_menu=main_menu, game_over_dialog=game_over_dialog, room_menu=room_menu)
+                             main_menu=main_menu, game_over_dialog=game_over_dialog, room_menu=room_menu, board_info=board_info_menu)
     
 
 

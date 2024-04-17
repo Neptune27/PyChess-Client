@@ -58,6 +58,10 @@ class Board(BaseService):
         # 0: Normal, 1: Check, 2: Checkmate as white, 3: Checkmate as black, 4: Draw
         self.board_state = 0
 
+        self.set_fen_callback = None
+        self.set_pgn_callback = None
+
+
         # self.setBoardByFEN("rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2")
         # self.setBoardByFEN("2b1kbnr/1P3ppp/8/4p3/8/8/RPP1PPPP/1NB1KBNR b Kk - 0 9")
         # self.setBoardByFEN("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
@@ -420,9 +424,9 @@ class Board(BaseService):
         result = ""
         for i, move in enumerate(self.pgn):
             if i % 2 == 0:
-                result += f"{math.floor(i / 2) + 1}. "
+                result += f"\n{math.floor(i / 2) + 1}. "
             result += move + " "
-        return result
+        return result.strip("\n")
 
     def _handle_best_move(self, return_value):
         self.best_move = return_value
@@ -475,8 +479,15 @@ class Board(BaseService):
         self.update_board_state()
         self.update_pgn_state()
         self.fen_pos.append(self.get_current_fen())
+        pgn = self.to_pgn()
         self.logger.info(f"FEN: {self.fen_pos}")
-        self.logger.info(f"PGN: {self.to_pgn()}")
+        self.logger.info(f"PGN: {pgn}")
+        self.handle_callback(self.set_fen_callback, self.fen_pos[-1])
+        self.handle_callback(self.set_pgn_callback, self.to_pgn())
+
+    def handle_callback(self, callback, *args):
+        if callback is not None:
+            callback(*args)
 
     def update_pgn_state(self):
         if self.board_state == 1:

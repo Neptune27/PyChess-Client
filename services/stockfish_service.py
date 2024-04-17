@@ -19,7 +19,12 @@ class StockfishService(BaseService):
         self.stockfish_path = "stockfish/windows/stockfish.exe" if platform.system() == "Windows" \
             else "stockfish/linux/stockfish"
         absolute_path = os.path.abspath(__package__)
-        path = absolute_path + "/../" + self.stockfish_path
+        if platform.system() == "Linux":
+            absolute_path = "/".join(absolute_path.split("/")[:-1])
+        path = absolute_path + "/" + self.stockfish_path
+        if platform.system() == "Windows":
+            path = absolute_path + "/../" + self.stockfish_path
+
         self.logger.info(path)
         self.stockfish = Stockfish(path=path, depth=20, parameters={
             "Debug Log File": "",
