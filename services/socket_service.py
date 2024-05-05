@@ -22,10 +22,13 @@ class SocketService(BaseService):
         self._socket.setblocking(False)
 
     def start(self):
-        self.connect()
-        self.running = True
-        threading.Thread(target=self._fork_receive).start()
-        threading.Thread(target=self._msg_on_ready).start()
+        try:
+            self.connect()
+            self.running = True
+            threading.Thread(target=self._fork_receive).start()
+            threading.Thread(target=self._msg_on_ready).start()
+        except ConnectionRefusedError:
+            self.logger.info("Cannot connect to server")
 
     def disconnect(self):
         self.logger.info("Disconnecting from server %s:%d", self.host, self.port)

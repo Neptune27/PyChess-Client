@@ -403,7 +403,8 @@ class King(Piece):
         y = 7 if self.is_white else 0
 
         if self.x != x or self.y != y:
-            return
+            self.can_castle_king = False
+            self.can_castle_queen = False
 
         self._handle_queen_castle(board, y)
         self._handle_king_castle(board, y)

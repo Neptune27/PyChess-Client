@@ -141,7 +141,6 @@ class RoomMenu(BaseUI):
         self.socket_service.send("rooms")
 
     def add_room(self, rooms: list[list]):
-
         for i, room in enumerate(rooms):
             anchors = {
                 'top_target': self.room_group[-1]
@@ -156,6 +155,9 @@ class RoomMenu(BaseUI):
                                                    text=f"Join room {i + 1}",
                                                    anchors=anchors
                                                    )
+            self.logger.info(f"Rooms: {room}")
+            if room[1] == 2:
+                ui_room.disable()
 
             self.room_group.append(ui_room)
         self.room_scroll_view.set_scrollable_area_dimensions((800, len(rooms) * 125))

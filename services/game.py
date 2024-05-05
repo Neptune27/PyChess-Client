@@ -178,7 +178,15 @@ class Game(BaseService):
                 case 3:
                     self.game_over_dialog.info_label.set_text("Black win")
                 case 4:
-                    self.game_over_dialog.info_label.set_text("Draw")
+                    self.game_over_dialog.info_label.set_text("Draw - Player Offered")
+                case 5:
+                    self.game_over_dialog.info_label.set_text("Draw - Stale Mate")
+                case 6:
+                    self.game_over_dialog.info_label.set_text("Draw - 50 Moves")
+                case 7:
+                    self.game_over_dialog.info_label.set_text("Draw - Three-fold Repetition")
+                case 8:
+                    self.game_over_dialog.info_label.set_text("Draw - Insufficient Pieces")
 
             self.game_over_dialog.update(time_delta)
             self.game_over_dialog.draw(self.screen)

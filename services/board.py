@@ -55,12 +55,12 @@ class Board(BaseService):
         self.moves = 1
         self.half_clock = 0
 
-        # 0: Normal, 1: Check, 2: Checkmate as white, 3: Checkmate as black, 4: Draw
+        # 0: Normal, 1: Check, 2: Checkmate as white, 3: Checkmate as black, 4: Draw - Player Offered,
+        # 5: Draw - Stale mate, 6: Draw - 50 Moves, 7: Draw - Three-fold repetition, 8: Draw - Insufficient Pieces
         self.board_state = 0
 
         self.set_fen_callback = None
         self.set_pgn_callback = None
-
 
         # self.setBoardByFEN("rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2")
         # self.setBoardByFEN("2b1kbnr/1P3ppp/8/4p3/8/8/RPP1PPPP/1NB1KBNR b Kk - 0 9")
@@ -142,6 +142,8 @@ class Board(BaseService):
         self.load_FEN_pieces(fenBoard)
 
         self.is_white_turn = True if items[1].lower() == 'w' else False
+        self.real_player_turn = self.is_white_turn
+
         self.ai_turn = not self.is_white_turn
 
         black_king, white_king = self.get_black_and_white_king()
@@ -432,6 +434,17 @@ class Board(BaseService):
         self.best_move = return_value
         self.logger.info(f"Best move: {self.best_move}")
 
+    def is_draw_by_repetition(self):
+        if len(self.fen_pos) < 2:
+            return
+
+        all_fen_board: list[str] = list(map(lambda i: " ".join(i.split()[:-2]), self.fen_pos))
+
+        current_fen_board = all_fen_board[-1]
+        current_occurrences = all_fen_board.count(current_fen_board)
+
+        return current_occurrences > 2
+
     def update_board_state(self):
         black_king, white_king = self.get_black_and_white_king()
         team_king = white_king if self.is_white_turn else black_king
@@ -444,7 +457,16 @@ class Board(BaseService):
             self.board_state = 2 if Board.is_no_possible_move(teams) else 1
 
         else:
-            self.board_state = 4 if Board.is_no_possible_move(teams) else 0
+            self.board_state = 5 if Board.is_no_possible_move(teams) else 0
+
+        if len(self.pieces) == 2:
+            self.board_state = 8
+
+        if self.half_clock == 50:
+            self.board_state = 6
+
+        if self.is_draw_by_repetition():
+            self.board_state = 7
 
         if self.board_state == 2:
             self.board_state = 2 if self.is_white_turn else 3
@@ -476,9 +498,11 @@ class Board(BaseService):
         if not self.is_ai and not self.is_online:
             self.real_player_turn = self.is_white_turn
         self.compute_legal_move()
+
+        self.fen_pos.append(self.get_current_fen())
         self.update_board_state()
         self.update_pgn_state()
-        self.fen_pos.append(self.get_current_fen())
+
         pgn = self.to_pgn()
         self.logger.info(f"FEN: {self.fen_pos}")
         self.logger.info(f"PGN: {pgn}")

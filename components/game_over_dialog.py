@@ -44,7 +44,7 @@ class GameOverDialog(BaseUI):
                                                        }
                                                        )
 
-        info_layout = pygame.Rect(0, 50, 100, 50)
+        info_layout = pygame.Rect(0, 50, 300, 50)
 
         self.info_label = pygame_gui.elements.UILabel(relative_rect=info_layout,
                                                       text='Restart',
