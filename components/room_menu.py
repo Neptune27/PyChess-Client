@@ -160,7 +160,7 @@ class RoomMenu(BaseUI):
                 ui_room.disable()
 
             self.room_group.append(ui_room)
-        self.room_scroll_view.set_scrollable_area_dimensions((800, len(rooms) * 125))
+        self.room_scroll_view.set_scrollable_area_dimensions((1000, len(rooms) * 125))
 
     def process_events(self, event: pygame.event.Event):
         super().process_events(event)

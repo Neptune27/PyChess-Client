@@ -142,7 +142,8 @@ class Board(BaseService):
         self.load_FEN_pieces(fenBoard)
 
         self.is_white_turn = True if items[1].lower() == 'w' else False
-        self.real_player_turn = self.is_white_turn
+        if self.is_online is False:
+            self.real_player_turn = self.is_white_turn
 
         self.ai_turn = not self.is_white_turn
 

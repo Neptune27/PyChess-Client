@@ -119,6 +119,9 @@ class ChatGUI(BaseUI):
         msg: str = self.deque.popleft()
         tokens = msg.split("|")
         match tokens[0]:
+            case "quit":
+                self.handle_callback(self.forfeit_offline_callback)
+                self.socket_service.disconnect()
             case "chat":
                 self.handle_chat(" ".join(tokens[1:]))
             case "command":
