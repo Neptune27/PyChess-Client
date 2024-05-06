@@ -132,12 +132,11 @@ class Game(BaseService):
     def handle_callback_puzzle(self):
         self.logger.info('Clicked Puzzle')
         self.board.is_online = False
-        self.board.is_ai = False
+        self.board.is_ai = True
 
         self.board.set_board_by_fen(self.generate_puzzle())
         self.game_scenes = EScene.BOARD
         self.chat_gui.is_online = False
-
 
     def generate_puzzle(self):
         url = "https://chess-puzzles.p.rapidapi.com/"
@@ -226,4 +225,3 @@ class Game(BaseService):
 
         self.board_info.update(time_delta)
         self.board_info.draw(self.screen)
-

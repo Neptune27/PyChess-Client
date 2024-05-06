@@ -815,7 +815,7 @@ class Board(BaseService):
                 for opponent_piece in opponents:
                     inner_illegal_moves = [move for move in opponent_piece.possible_moves if move.x == team_king.x
                                            and move.y == team_king.y]
-                    if isinstance(piece, King):
+                    if isinstance(piece, King) and (cloned_piece.can_castle_queen or cloned_piece.can_castle_king):
                         inner_illegal_moves += self._filter_illegal_castling(piece, opponent_piece)
 
                     if len(inner_illegal_moves) > 0:
@@ -859,11 +859,11 @@ class Board(BaseService):
     @staticmethod
     def _filter_illegal_castling(king_piece: King, opponent_piece: Piece):
         illegal_moves = []
-        if king_piece.x == 6 and king_piece.can_castle_king:
-            illegal_moves += [move for move in opponent_piece.possible_moves if move.x == 5
+        if king_piece.x == 6:
+            illegal_moves += [move for move in opponent_piece.possible_moves if (move.x == 5 or move.x == 6)
                               and move.y == king_piece.y]
-        if king_piece.x == 4 and king_piece.can_castle_queen:
-            illegal_moves += [move for move in opponent_piece.possible_moves if move.x == 3
+        if king_piece.x == 2:
+            illegal_moves += [move for move in opponent_piece.possible_moves if (move.x == 3 or move.x == 4)
                               and move.y == king_piece.y]
         return illegal_moves
 
