@@ -861,10 +861,10 @@ class Board(BaseService):
     def _filter_illegal_castling(king_piece: King, opponent_piece: Piece):
         illegal_moves = []
         if king_piece.x == 6:
-            illegal_moves += [move for move in opponent_piece.possible_moves if (move.x == 5 or move.x == 6)
+            illegal_moves += [move for move in opponent_piece.possible_moves if (4 <= move.x <= 6)
                               and move.y == king_piece.y]
         if king_piece.x == 2:
-            illegal_moves += [move for move in opponent_piece.possible_moves if (move.x == 3 or move.x == 4)
+            illegal_moves += [move for move in opponent_piece.possible_moves if (2 <= move.x <= 4)
                               and move.y == king_piece.y]
         return illegal_moves
 
