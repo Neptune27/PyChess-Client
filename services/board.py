@@ -463,6 +463,11 @@ class Board(BaseService):
         if len(self.pieces) == 2:
             self.board_state = 8
 
+        if len(self.pieces) == 3:
+            for p in self.pieces:
+                if isinstance(p, Knight) or isinstance(p, Bishop):
+                    self.board_state = 8
+
         if self.half_clock == 50:
             self.board_state = 6
 
