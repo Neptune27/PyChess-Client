@@ -18,6 +18,7 @@ class Board(BaseService):
     col_notation = ['8', '7', '6', '5', '4', '3', '2', '1']
 
     def __init__(self, stockfish: StockfishService, setting: Setting, socket_service: SocketService):
+        # Code
         BaseService.__init__(self)
         self.socket_service = socket_service
         self.stockfish = stockfish
@@ -58,6 +59,9 @@ class Board(BaseService):
         # 0: Normal, 1: Check, 2: Checkmate as white, 3: Checkmate as black, 4: Draw - Player Offered,
         # 5: Draw - Stale mate, 6: Draw - 50 Moves, 7: Draw - Three-fold repetition, 8: Draw - Insufficient Pieces
         self.board_state = 0
+
+        self.capture_sound = pygame.mixer.Sound("./assets/audio/Capture.mp3")
+        self.move_sound = pygame.mixer.Sound("./assets/audio/Move.mp3")
 
         self.set_fen_callback = None
         self.set_pgn_callback = None
@@ -498,9 +502,7 @@ class Board(BaseService):
         self.is_white_turn = not self.is_white_turn
         if self.is_ai and self.is_white_turn == self.ai_turn:
             self.make_turn_by_stockfish()
-            # self.ai_turn = not self.ai_turn
 
-        # self.stockfish.get_best_move(self._handle_best_move)
         if not self.is_ai and not self.is_online:
             self.real_player_turn = self.is_white_turn
         self.compute_legal_move()
@@ -514,6 +516,17 @@ class Board(BaseService):
         self.logger.info(f"PGN: {pgn}")
         self.handle_callback(self.set_fen_callback, self.fen_pos[-1])
         self.handle_callback(self.set_pgn_callback, self.to_pgn())
+
+        self.play_sound()
+
+    def play_sound(self):
+        if len(self.pgn) == 0:
+            return
+
+        if "x" in self.pgn[-1]:
+            self.capture_sound.play()
+        else:
+            self.move_sound.play()
 
     def handle_callback(self, callback, *args):
         if callback is not None:
@@ -623,7 +636,7 @@ class Board(BaseService):
                 self._handle_castle(from_piece, x, y, test_mode)
 
         if not test_mode:
-            pgn = self.create_pgn_turn(from_piece, dest, dest_item, extra)
+            pgn = self.create_pgn_turn(from_piece, dest, dest_item, by_square, extra)
 
             square_name = self.create_square_name(from_piece, dest, by_square, extra)
             self.squares.append(square_name)
@@ -716,7 +729,7 @@ class Board(BaseService):
         self.make_turn((to_x, to_y), False, extra.upper(), True)
         self.next_turn()
 
-    def create_pgn_turn(self, piece: Piece, dest: tuple[int, int], capture=None, extra="") -> str:
+    def create_pgn_turn(self, piece: Piece, dest: tuple[int, int], capture=None, by_square=False, extra="") -> str:
         x, y = dest[0], dest[1]
         adder = ""
 
@@ -739,6 +752,16 @@ class Board(BaseService):
             adder += "x"
 
         pos = Board.row_notation[x] + Board.col_notation[y]
+
+        if isinstance(piece, Pawn) and (piece.y == 1 or piece.y == 6) and not by_square:
+            pos = Board.row_notation[piece.next_x] + Board.col_notation[piece.next_y]
+            if adder == "":
+                capture = self.coordinate[piece.next_x, piece.next_y]
+                if capture is not None:
+                    adder += Board.row_notation[piece.x]
+                    adder += "x"
+
+                a = 2
 
         if extra != "":
             extra = "=" + extra
