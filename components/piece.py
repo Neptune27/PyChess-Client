@@ -64,7 +64,7 @@ class Piece(BaseService, Sprite):
 
     @staticmethod
     def get_piece_moves_dict(piece_type: str) -> tuple[list[tuple[int, int]], bool]:
-        """Return info: (dict) on ghow a particular piece moves"""
+        """Return info: (dict) on how a particular piece moves"""
         piece_move_info: dict = Piece.move_dict[piece_type]
         movements: list[tuple[int, int]] = piece_move_info["movements"]
         continuous: bool = piece_move_info["continuous"]

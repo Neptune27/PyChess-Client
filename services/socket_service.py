@@ -5,12 +5,11 @@ import socket
 from services.base_service import BaseService
 
 
-
 class SocketService(BaseService):
     def __init__(self):
         BaseService.__init__(self)
         self._socket = None
-        self.host = '26.247.59.68'
+        self.host = 'localhost'
         self.port = 9999
         self.receive_handlers = []
         self.ready_msg = ""

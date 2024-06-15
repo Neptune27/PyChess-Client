@@ -221,7 +221,7 @@ class Board(BaseService):
                             raise ValueError(f"p is not a number: {p}")
                 offset += 1
 
-    def setBoardByNotations(self, notations: list[str]) -> None:
+    def set_board_by_notations(self, notations: list[str]) -> None:
         self.logger.info(f"Loading Notations Board: {notations}")
         raise NotImplementedError("")
 
@@ -760,9 +760,6 @@ class Board(BaseService):
                 if capture is not None:
                     adder += Board.row_notation[piece.x]
                     adder += "x"
-
-                a = 2
-
         if extra != "":
             extra = "=" + extra
 
